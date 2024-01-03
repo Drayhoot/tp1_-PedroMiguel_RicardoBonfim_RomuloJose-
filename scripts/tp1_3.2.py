@@ -24,6 +24,7 @@ def inicializeDB():
                 asin_similar CHAR (10) NOT NULL 
                 );
                 """)
+                #asin_similar n eh tratado como chave estrangeira pois existe alguns produtos não instanciados que estavam na área de asin_similars.
 
     cur.execute("""CREATE TABLE IF NOT EXISTS reviews(
                 review_date DATE NOT NULL,
@@ -38,7 +39,7 @@ def inicializeDB():
 
     cur.execute("""CREATE TABLE IF NOT EXISTS product_categories(
                 asin CHAR (10) NOT NULL REFERENCES products(asin),
-                category_name VARCHAR (500) NOT NULL
+                category_name VARCHAR (2500) NOT NULL
                 );
                 """)
     conn.commit()
@@ -111,31 +112,22 @@ def leProduto(linhas, iAtual, iMax):
 
     # Padroes de Review
     headerReviewsPattern = re.compile(r'reviews:\stotal:\s(\d+)\s\sdownloaded:\s(\d+)\s\savg rating:\s(\d+\.\d+|\d+)')
-    #contentReviewsPattern = re.compile(r'\d{4}-\d{1,2}-\d{1,2}\s*cutomer:\s[\dA-Z]+\s*rating:\s\d\s*votes:\s*\d+\s*helpful:\s*\d+')
     reviewCustomerDate = re.compile(r'\d{4}-\d{1,2}-\d{1,2}')
     reviewCustomerId = re.compile(r'(?<=cutomer:)\s*[\dA-Z]+')
     reviewCustomerRating = re.compile(r'(?<=rating:)\s*\d')
     reviewCustomerVotes = re.compile(r'(?<=votes:)\s*\d+')
     reviewCustomerHelpful = re.compile(r'(?<=helpful:)\s*\d+')
 
-    #    patterns = [idPattern,asinPattern,titlePattern,salesrankPattern, numberOfSimilarsPattern, idsSimilarsPattern,categoriesHeaderPattern,reviewsHeaderPattern]
-
 
     while i < iMax and linhas[i] != '\n':
-        #print(linhas[i])
         linhaAtual = linhas[i] # p/ debug
-        #print('linha atual:', linhaAtual)
 
         if(elementoAtual == 0):
             elementoAtual += 1
             id = idPattern.findall(linhas[i])
             if(id):
-                # p/ visualizar melhor, comente se nao quiser
                 infoProduto['id'] = id[0]
-                #print('id:' , id[0])
             else:
-                # infoProduto['id'] = 'null'
-                # print('id:', 'null')
                 i+=1
                 return (None, i) # confirmar decisaso (se nao achar 'id:', significa que nao ha produto)
 
@@ -144,41 +136,33 @@ def leProduto(linhas, iAtual, iMax):
             asin = asinPattern.findall(linhas[i])
             if(asin):
                 infoProduto['asin'] = asin[0]
-                #print('asin:',asin[0])
             else:
                 infoProduto['asin'] = 'null'
-                #print('asin:', 'null')
-            
+    
         elif(elementoAtual == 2):
             elementoAtual += 1
             title = titlePattern.findall(linhas[i])
             if(title):
                 infoProduto['title'] = title[0]
-                #print('title:', title[0])
             else:
                 infoProduto['title'] = 'null'
-                #print('title:', 'null')
 
         elif(elementoAtual == 3):
             elementoAtual += 1
             group = groupPattern.findall(linhas[i])
             if(group):
                 infoProduto['group'] = group[0]
-                #print('group:', group)
             
             else:
                 infoProduto['group'] = 'null'
-                #print('group:', 'null')
 
         elif(elementoAtual == 4):
             elementoAtual += 1
             sales = salesrankPattern.findall(linhas[i])
             if(sales):
                 infoProduto['sales'] = sales[0]
-                #print('sales:',sales[0])
             else:
                 infoProduto['sales'] = 'null'
-                #print('sales:', 'null')
 
         elif(elementoAtual == 5):
             elementoAtual += 1
@@ -189,10 +173,8 @@ def leProduto(linhas, iAtual, iMax):
             
             if(numberSimilars and idsSimilars):
                 infoProduto['similarIds'] = idsSimilars
-                #print('numberSimilars:', idsSimilars)
             else:
                 infoProduto['similarIds'] = ['null']
-                #print('numberSimilars:', '[null]')
 
         elif(elementoAtual == 6):
             elementoAtual += 1
@@ -201,26 +183,16 @@ def leProduto(linhas, iAtual, iMax):
                 numCatergories = int(catergoriesHeader[0])
                 iCategories = 0
                 allCategoriesInfo = []
-                #print(f'categorias: {numCatergories}')
                 
                 if(numCatergories > 0):
                     while iCategories < numCatergories:
                         i += 1
                         categoriesInfo = nullOrNot(linhas[i])
                         allCategoriesInfo.append(categoriesInfo.replace(' ',''))
-                        #print(categoriesInfo)
-                        # categoriesInfo2 = categoriesInfoPattern.findall(linhas[i])
-                        # categories = ''
-                        # for category in categoriesInfo2:
-                        #     categories += '|' + category
-
-                        # print(categoriesInfo, categories)
                         iCategories += 1
 
-                    #print(f"RESULT. CAT: {allCategoriesInfo}")
                     infoProduto['categories'] = allCategoriesInfo
                 else:
-                    #print(f"RESULT. CAT: [null]")
                     infoProduto['categories'] = ['null']
             else:
                 infoProduto['categories'] = ['null']
@@ -229,8 +201,6 @@ def leProduto(linhas, iAtual, iMax):
             headerReviews = headerReviewsPattern.findall(linhas[i])
             if(headerReviews):
                 allReviewInfo = []
-                #print('reviews:')
-                #print(headerReviews)
                 i+=1
                 
                 try:
@@ -264,7 +234,6 @@ def leProduto(linhas, iAtual, iMax):
                             else:
                                 rhelpful = 'null'
 
-                            #print(rdate,rid,rrating, rvotes, rhelpful)
                             reviewAtual = [rdate, rid, rrating, rvotes, rhelpful]
                             allReviewInfo.append(reviewAtual)
 
@@ -283,11 +252,6 @@ def leProduto(linhas, iAtual, iMax):
         i += 1
 
     i += 1
-    
-    #for key, value in infoProduto.items():
-    #    print(f"{key}: {value}")
-        #pass
-
 
     if(elementoAtual != 7):
         elementos = ['id', 'asin','title','group','sales', 'similarIds']
@@ -304,7 +268,6 @@ def leProduto(linhas, iAtual, iMax):
     return (infoProduto, i)
 
 def percorreArquivo(arquivo):
-    
     try:
         with open(arquivo, 'r', encoding='utf8') as file:
             linhas = file.readlines()
@@ -331,9 +294,6 @@ def percorreArquivo(arquivo):
                         if(produto['reviews'][0] != 'null'):
                             for review in produto['reviews']:
                                 insereReviews(review[0],review[1],review[2],review[3],review[4],produto['asin'])
-
-                
-
 
     except FileNotFoundError:
         print(f"Erro: O arquivo '{arquivo}' não foi encontrado.")
