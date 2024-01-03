@@ -9,82 +9,96 @@ conn = psycopg2.connect(database = "postgres",
                         port = 5432)
 
 def inicializeDB():
-    cur = conn.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS products(
-                product_id SERIAL UNIQUE NOT NULL PRIMARY KEY,
-                asin CHAR (10) UNIQUE NOT NULL,
-                product_title VARCHAR (452),
-                product_group VARCHAR (13),
-                product_salesrank INTEGER
-                );
-                """)
+    try:
+        cur = conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS products(
+                    product_id SERIAL UNIQUE NOT NULL PRIMARY KEY,
+                    asin CHAR (10) UNIQUE NOT NULL,
+                    product_title VARCHAR (452),
+                    product_group VARCHAR (13),
+                    product_salesrank INTEGER
+                    );
+                    """)
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS similars(
-                asin CHAR (10) NOT NULL REFERENCES products(asin),
-                asin_similar CHAR (10) NOT NULL 
-                );
-                """)
-                #asin_similar n eh tratado como chave estrangeira pois existe alguns produtos não instanciados que estavam na área de asin_similars.
+        cur.execute("""CREATE TABLE IF NOT EXISTS similars(
+                    asin CHAR (10) NOT NULL REFERENCES products(asin),
+                    asin_similar CHAR (10) NOT NULL 
+                    );
+                    """)
+                    #asin_similar n eh tratado como chave estrangeira pois existe alguns produtos não instanciados que estavam na área de asin_similars.
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS reviews(
-                review_date DATE NOT NULL,
-                id_customer VARCHAR (18) NOT NULL,
-                rating INTEGER NOT NULL,
-                votes INTEGER NOT NULL,
-                helpful INTEGER NOT NULL,
-                asin CHAR (10) NOT NULL REFERENCES products(asin),
-                review_id SERIAL UNIQUE NOT NULL PRIMARY KEY
-                );
-                """)
+        cur.execute("""CREATE TABLE IF NOT EXISTS reviews(
+                    review_date DATE NOT NULL,
+                    id_customer VARCHAR (18) NOT NULL,
+                    rating INTEGER NOT NULL,
+                    votes INTEGER NOT NULL,
+                    helpful INTEGER NOT NULL,
+                    asin CHAR (10) NOT NULL REFERENCES products(asin),
+                    review_id SERIAL UNIQUE NOT NULL PRIMARY KEY
+                    );
+                    """)
 
-    cur.execute("""CREATE TABLE IF NOT EXISTS product_categories(
-                asin CHAR (10) NOT NULL REFERENCES products(asin),
-                category_name VARCHAR (2500) NOT NULL
-                );
-                """)
-    conn.commit()
-    cur.close()
-
+        cur.execute("""CREATE TABLE IF NOT EXISTS product_categories(
+                    asin CHAR (10) NOT NULL REFERENCES products(asin),
+                    category_name VARCHAR (2500) NOT NULL
+                    );
+                    """)
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Não foi possível criar tabelas\n{e}")
 
 def insereProduto(pId='null',asin='null',pTitle='null',pGroup='null',pSalesrank='null'):
     if(pId == 'null' or asin == 'null'):
         return
     if("'" in pTitle):
         pTitle = pTitle.replace("'","''")
-    cur = conn.cursor()
-    sql_command = "INSERT INTO products(product_id,asin,product_title,product_group,product_salesrank) VALUES ({}, '{}', '{}', '{}', {})"
-    cur.execute(sql_command.format(pId, asin, pTitle, pGroup, pSalesrank))
-    conn.commit()
-    cur.close()
+    try:
+        cur = conn.cursor()
+        sql_command = "INSERT INTO products(product_id,asin,product_title,product_group,product_salesrank) VALUES ({}, '{}', '{}', '{}', {})"
+        cur.execute(sql_command.format(pId, asin, pTitle, pGroup, pSalesrank))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Erro ao inserir na tabela products\n{e}")
 
 def insereSimilares(asin='null',asin_similar='null'):
     if(asin_similar == 'null' or asin == 'null'):
         return
-    cur = conn.cursor()
-    sql_command = "INSERT INTO similars(asin, asin_similar) VALUES ('{}', '{}')"
-    cur.execute(sql_command.format(asin, asin_similar))
-    conn.commit()
-    cur.close()
+    try:
+        cur = conn.cursor()
+        sql_command = "INSERT INTO similars(asin, asin_similar) VALUES ('{}', '{}')"
+        cur.execute(sql_command.format(asin, asin_similar))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Erro ao inserir na tabela similars\n{e}")
 
 def insereReviews(review_date='null', id_customer='null', rating='null', votes='null', helpful='null', asin='null'):
     if(id_customer=='null'or rating=='null' or asin=='null'):
         return
-    cur = conn.cursor()
-    sql_command = "INSERT INTO reviews(review_date, id_customer, rating, votes, helpful, asin) VALUES ('{}', '{}', {}, {}, {}, '{}')"
-    cur.execute(sql_command.format(review_date, id_customer, rating, votes, helpful, asin))
-    conn.commit()
-    cur.close()
+    try:
+        cur = conn.cursor()
+        sql_command = "INSERT INTO reviews(review_date, id_customer, rating, votes, helpful, asin) VALUES ('{}', '{}', {}, {}, {}, '{}')"
+        cur.execute(sql_command.format(review_date, id_customer, rating, votes, helpful, asin))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Erro ao inserir na tabela reviews\n{e}")
 
 def insereCategorias(asin='null', category_name='null'):
     if(asin == 'null' or category_name == 'null'):
         return
     if("'" in category_name):
         category_name = category_name.replace("'","''")
-    cur = conn.cursor()
-    sql_command = "INSERT INTO product_categories(asin, category_name) VALUES ('{}', '{}')"
-    cur.execute(sql_command.format(asin, category_name))
-    conn.commit()
-    cur.close()
+    try:
+        cur = conn.cursor()
+        sql_command = "INSERT INTO product_categories(asin, category_name) VALUES ('{}', '{}')"
+        cur.execute(sql_command.format(asin, category_name))
+        conn.commit()
+        cur.close()
+    except Exception as e:
+        print(f"Erro ao inserir na tabela product_categories\n{e}")
 
 def nullOrNot(value):
     if(value != ''):
@@ -95,7 +109,6 @@ def leProduto(linhas, iAtual, iMax):
     infoProduto = {}
     i = iAtual
     elementoAtual = 0
-
 
     # Padroes para a tabela principal
     idPattern = re.compile(r'Id:\s*(\d+)\n')
@@ -117,7 +130,6 @@ def leProduto(linhas, iAtual, iMax):
     reviewCustomerRating = re.compile(r'(?<=rating:)\s*\d')
     reviewCustomerVotes = re.compile(r'(?<=votes:)\s*\d+')
     reviewCustomerHelpful = re.compile(r'(?<=helpful:)\s*\d+')
-
 
     while i < iMax and linhas[i] != '\n':
         linhaAtual = linhas[i] # p/ debug
@@ -272,14 +284,14 @@ def percorreArquivo(arquivo):
         with open(arquivo, 'r', encoding='utf8') as file:
             linhas = file.readlines()
             totalLinhas = len(linhas)
-            
             i = 0
             while i < totalLinhas:
                 produto, i = leProduto(linhas, i, totalLinhas)
                 if(produto):
-                    if(produto['id']!='null'):
-                        if(int(produto['id'])%1000==0):
-                            print(produto)
+                    if(produto['id']):
+                        if(produto['id']%10000 == 0):
+                            print("Id atual:", produto['id'], "\n")
+                            #printando o id de 10k em 10k para ter noção de progresso
                     insereProduto(produto['id'],produto['asin'],produto['title'],produto['group'],produto['sales'])
                     if(produto['similarIds'][0]!='null'):
                         numSimilares = int(produto['similarIds'][0])
