@@ -1,3 +1,8 @@
+## Equipe:
+Pedro Miguel Pinto Botelho
+Ricardo Augusto Silva Bonfim
+Rômulo José Pereira da Costa Júnior
+
 # Repositorio Base
 # Trabalho Prático 1 de Bancos de Dados I 
 
