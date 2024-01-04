@@ -1,6 +1,7 @@
 import psycopg2
 import os
 from datetime import datetime
+import prettytable
 today = datetime.now()
 data_string=today.strftime("_%d%m%Y_%H%M%S.txt")
 
@@ -18,22 +19,22 @@ connection = {
     'port': 5432,
 }
 a = [
-    "SELECT review_id, helpful, rating FROM reviews WHERE asin = '{asin}' AND helpful IS NOT NULL AND rating IS NOT NULL ORDER BY rating DESC, helpful DESC LIMIT 5;",
-    "SELECT review_id, helpful, rating FROM reviews WHERE asin = '{asin}' AND helpful IS NOT NULL AND rating IS NOT NULL ORDER BY rating ASC, helpful DESC LIMIT 5;"
+    "SELECT * FROM reviews WHERE asin = '{asin}' AND helpful IS NOT NULL AND rating IS NOT NULL ORDER BY rating DESC, helpful DESC LIMIT 5;",
+    "SELECT * FROM reviews WHERE asin = '{asin}' AND helpful IS NOT NULL AND rating IS NOT NULL ORDER BY rating ASC, helpful DESC LIMIT 5;"
 ]
-b = ["SELECT asin_similar AS similar, product_salesrank AS salesrank FROM similars,products WHERE similars.asin = '{asin}' AND products.asin = asin_similar AND product_salesrank < (SELECT product_salesrank FROM products WHERE asin = '{asin}') AND product_salesrank > 0"]
-c = ["SELECT review_date AS data, AVG(rating) AS media_avaliacao FROM reviews WHERE asin = '{asin}' GROUP BY review_date ORDER BY review_date;"]
-d = ["SELECT product_id, product_group, product_salesrank FROM (SELECT product_id, product_group, product_salesrank, ROW_NUMBER() OVER (PARTITION BY product_group ORDER BY product_salesrank) AS rank FROM products WHERE product_salesrank IS NOT NULL AND product_salesrank > 0) ranked WHERE rank <= 10;"]
-e = ["SELECT products.product_id AS Product_ID,products.product_title, AVG(reviews.helpful) AS Media_Avaliacoes_Uteis FROM reviews JOIN products ON reviews.asin = products.asin WHERE reviews.rating > 0 GROUP BY products.product_id ORDER BY AVG(reviews.helpful) DESC LIMIT 10;"]
+b = ["SELECT asin_similar AS similar,product_title as title, product_salesrank AS salesrank FROM similars,products WHERE similars.asin = '{asin}' AND products.asin = asin_similar AND product_salesrank < (SELECT product_salesrank FROM products WHERE asin = '{asin}') AND product_salesrank > 0"]
+c = ["SELECT asin ,review_date AS data, AVG(rating) OVER (PARTITION BY asin ORDER BY review_date) AS media_avaliacao FROM reviews WHERE asin = '{asin}';"]
+d = ["SELECT product_id, product_group, product_salesrank, product_title FROM (SELECT product_id, product_group, product_salesrank,product_title, ROW_NUMBER() OVER (PARTITION BY product_group ORDER BY product_salesrank) AS rank FROM products WHERE product_salesrank IS NOT NULL AND product_salesrank > 0) ranked WHERE rank <= 10;"]
+e = ["SELECT products.product_id ,products.product_title, AVG(reviews.helpful) AS Media_Avaliacoes_Uteis FROM reviews JOIN products ON reviews.asin = products.asin WHERE reviews.rating > 0 GROUP BY products.product_id ORDER BY AVG(reviews.helpful) DESC LIMIT 10;"]
 f = ["SELECT product_categories.category_name AS Category_Name, AVG(reviews.helpful) AS Media_Avaliacoes_Uteis FROM reviews JOIN product_categories ON reviews.asin = product_categories.asin WHERE reviews.rating > 0 GROUP BY product_categories.category_name ORDER BY AVG(reviews.helpful) DESC LIMIT 5;"]
 g = ["SELECT client_id, product_group, Total_Comentarios FROM (SELECT r.*, ROW_NUMBER() OVER (PARTITION BY product_group ORDER BY product_group) AS rank FROM (SELECT reviews.id_customer AS client_id, products.product_group, COUNT(reviews.id_customer) AS Total_Comentarios FROM reviews JOIN products ON reviews.asin = products.asin GROUP BY products.product_group, reviews.id_customer ORDER BY products.product_group, Total_Comentarios DESC) AS r) as r WHERE rank < 11;"]
 consultas = {'a': a, 'b': b, 'c': c, 'd': d, 'e': e, 'f': f, 'g': g}
 
-ha=["review_id", "helpful", "rating"]
-hb=["similar", "salesrank"] 
-hc=["data", "media_avaliacao"]
-hd=["product_id","product_group","product_salesrank"]
-he=["Product_ID","product_title","Media_Avaliacoes_Uteis"]
+ha=["review_date", "id_customer", "rating", "votes", "helpful", "asin", "review_id"]
+hb=["similar", "title", "salesrank"] 
+hc=["asin","data","media_avaliacao"]
+hd=["product_id","product_title","product_group","product_salesrank"]
+he=["product_id","product_title","Media_Avaliacoes_Uteis"]
 hf=["Category_Name","Media_Avaliacoes_Uteis"]
 hg=["client_id", "product_group", "Total_Comentarios"]
 
@@ -46,8 +47,11 @@ def func_principal(consultaEscolhida):
                 try:
                     cursor.execute(query)
                     resultados = cursor.fetchall()
+                    table = prettytable.PrettyTable()
+                    table.field_names = headersTabelas[consultaEscolhida]
                     for result in resultados:
-                        arq_saida.write(f"{result}\n")
+                        table.add_row(result)
+                    arq_saida.write(f"{table}\n\n")
                         
                 except Exception as e:
                     print(f'Ocorreu um erro: {e}')
@@ -76,7 +80,6 @@ elif(arquivo == 'n'):
         print(f"\nIniciando consulta: {consulta}\n")
         arq_saida.write(f"\nIniciando consulta: {consulta}\n")
         consultas[consulta] = [query.format(asin=asin) for query in consultas[consulta]]
-        arq_saida.write(f"{headersTabelas[consulta]}\n")
         func_principal(consulta)
     arq_saida.close()
     
