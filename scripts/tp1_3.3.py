@@ -14,7 +14,7 @@ connection = {
     'database': 'postgres',
     'user': 'postgres',
     'host': 'localhost',
-    'password': 'postgres',
+    'password': '123',
     'port': 5432,
 }
 a = [
@@ -53,7 +53,7 @@ def func_principal(consultaEscolhida):
                     print(f'Ocorreu um erro: {e}')
     
 
-if(arquivo == 'Y'):
+if(arquivo == 'y'):
     while True:
         consultaEscolhida = input('Escolha entre as opcoes de consulta:').lower()
         if consultaEscolhida in consultas.keys():
@@ -69,12 +69,12 @@ if(arquivo == 'Y'):
             print("Escolha uma opcao correta do dashboard")
         
     
-elif(arquivo == 'N'):
+elif(arquivo == 'n'):
     asin = "1559362022"
-    arq_saida.write(f"iniciando consultas considerando asin = \"{asin}\"\n")
+    arq_saida.write(f"\niniciando consultas considerando asin = \"{asin}\"\n")
     for consulta in consultas:
-        print(f"Iniciando consulta: {consulta}\n")
-        arq_saida.write(f"Iniciando consulta: {consulta}\n\n")
+        print(f"\nIniciando consulta: {consulta}\n")
+        arq_saida.write(f"\nIniciando consulta: {consulta}\n")
         consultas[consulta] = [query.format(asin=asin) for query in consultas[consulta]]
         arq_saida.write(f"{headersTabelas[consulta]}\n")
         func_principal(consulta)
